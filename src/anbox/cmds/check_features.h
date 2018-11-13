@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Simon Fels <morphis@gravedo.de>
+ * Copyright (C) 2018 Simon Fels <morphis@gravedo.de>
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 3, as published
@@ -15,8 +15,8 @@
  *
  */
 
-#ifndef ANBOX_CMDS_CONTAINER_MANAGER_H_
-#define ANBOX_CMDS_CONTAINER_MANAGER_H_
+#ifndef ANBOX_CMDS_CHECK_FEATURES_H_
+#define ANBOX_CMDS_CHECK_FEATURES_H_
 
 #include <functional>
 #include <iostream>
@@ -24,30 +24,14 @@
 
 #include "anbox/cli.h"
 
-#include "anbox/common/loop_device.h"
-#include "anbox/common/mount_entry.h"
-
 namespace anbox {
 namespace cmds {
-class ContainerManager : public cli::CommandWithFlagsAndAction {
+class CheckFeatures : public cli::CommandWithFlagsAndAction {
  public:
-  ContainerManager();
-  ~ContainerManager();
+  CheckFeatures();
 
  private:
-  bool setup_mounts();
-  bool setup_rootfs_overlay();
-
-  std::string android_img_path_;
-  std::string data_path_;
-  std::shared_ptr<common::LoopDevice> android_img_loop_dev_;
-  std::vector<std::shared_ptr<common::MountEntry>> mounts_;
-  bool privileged_ = false;
-  bool daemon_ = false;
-  bool enable_rootfs_overlay_ = false;
-  std::string container_network_address_;
-  std::string container_network_gateway_;
-  std::string container_network_dns_servers_;
+  bool sanity_check_for_features();
 };
 }  // namespace cmds
 }  // namespace anbox

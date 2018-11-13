@@ -16,25 +16,43 @@ grade: devel
 architectures: [amd64]
 
 slots:
-  # Depending on in which environment we're running we either need
-  # to use the system or session DBus so we also need to have one
-  # slot for each.
-  dbus-session:
+  dbus-session-slot:
     interface: dbus
-    bus: system
+    bus: session
     name: org.anbox
-  dbus-system:
+
+plugs:
+  dbus-session-plug:
     interface: dbus
-    bus: system
+    bus: session
     name: org.anbox
 
 apps:
   anbox:
     command: desktop-launch $SNAP/bin/anbox-wrapper.sh
+    slots:
+      - dbus-session-slot
+    plugs:
+      - x11
+      - unity7
+      - network
+      - opengl
+      - wayland
+      - pulseaudio
+      - home
+      - process-control
+      - desktop
+
   container-manager:
     command: bin/container-manager.sh start
     stop-command: bin/container-manager.sh stop
     daemon: simple
+    plugs:
+      - firewall-control
+      - mount-observe
+      - network-control
+      - network-bind
+
   collect-bug-info:
     command: bin/collect-bug-info.sh
   shell:
@@ -42,9 +60,36 @@ apps:
   android-settings:
     command: desktop-launch $SNAP/bin/app-android-settings.sh
     desktop: desktop/android-settings.desktop
+    slots:
+      - dbus-session-slot
+    plugs:
+      - dbus-session-plug
+      - x11
+      - unity7
+      - network
+      - opengl
+      - wayland
+      - pulseaudio
+      - home
+      - process-control
+      - desktop
+
   appmgr:
     command: desktop-launch $SNAP/bin/app-appmgr.sh
     desktop: desktop/appmgr.desktop
+    slots:
+      - dbus-session-slot
+    plugs:
+      - dbus-session-plug
+      - x11
+      - unity7
+      - network
+      - opengl
+      - wayland
+      - pulseaudio
+      - home
+      - process-control
+      - desktop
 
 parts:
   android:
@@ -70,9 +115,9 @@ parts:
 
         case "$ARCH" in
           x86_64)
-            IMAGE_PATH="2018/06/12"
+            IMAGE_PATH="2018/07/19"
             IMAGE_NAME="android_amd64.img"
-            IMAGE_HASH="5c4b8f7caeaf604770e37a29b65c7711b26d009a548b4fac8dfb77585e56dc73"
+            IMAGE_HASH="6b04cd33d157814deaf92dccf8a23da4dc00b05ca6ce982a03830381896a8cca"
             ;;
           *)
             echo "ERROR: Unknown architecture $ARCH"
@@ -99,10 +144,17 @@ parts:
     stage-packages:
       - apparmor
 
+  zip:
+    plugin: nil
+    stage-packages:
+      - zip
+    prime:
+      - usr/bin/zip
+
   lxc:
     source: https://github.com/lxc/lxc
     source-type: git
-    source-tag: lxc-3.0.0
+    source-tag: lxc-3.0.1
     build-packages:
       - libapparmor-dev
       - libcap-dev
@@ -125,6 +177,16 @@ parts:
       - --enable-capabilities
       - --with-rootfs-path=/var/snap/anbox/common/lxc/
       - --libexecdir=/snap/anbox/current/libexec/
+    override-build: |
+      set -ex
+      git config user.email "buildbot@anbox.io"
+      git config user.name "Anbox Buildbot"
+      git remote add anbox https://github.com/anbox/lxc
+      git fetch anbox
+      # apparmor: don't require a transition for Anbox child profiles
+      git cherry-pick 2f81fb7c91560b32e506bb874f8cd63e37985906
+      set +ex
+      snapcraftctl build
     organize:
       snap/anbox/current/libexec: libexec
     prime:
@@ -195,6 +257,9 @@ parts:
       # that is fixed we can avoid using a prefix here.
       - -DCMAKE_INSTALL_PREFIX:PATH=/usr
       - -DANBOX_VERSION=$SNAPCRAFT_PROJECT_VERSION
+      # FIXME: Once we have everything in place for full snap confinement we
+      # can securely enable this.
+      # - -DSNAP_CONFINEMENT=ON
     build-packages:
       - build-essential
       - cmake
@@ -215,7 +280,6 @@ parts:
       - libdbus-1-dev
       - libegl1-mesa-dev
       - libgles2-mesa-dev
-      - libglib2.0-dev
       - libgtest-dev
       - libprotobuf-dev
       - libproperties-cpp-dev

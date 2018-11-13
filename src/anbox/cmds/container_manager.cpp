@@ -55,6 +55,15 @@ anbox::cmds::ContainerManager::ContainerManager()
   flag(cli::make_flag(cli::Name{"use-rootfs-overlay"},
                       cli::Description{"Use an overlay for the Android rootfs"},
                       enable_rootfs_overlay_));
+  flag(cli::make_flag(cli::Name{"container-network-address"},
+                      cli::Description{"Assign the specified network address to the Android container"},
+                      container_network_address_));
+  flag(cli::make_flag(cli::Name{"container-network-gateway"},
+                      cli::Description{"Assign the specified network gateway to the Android container"},
+                      container_network_gateway_));
+  flag(cli::make_flag(cli::Name{"container-network-dns-servers"},
+                      cli::Description{"Assign the specified DNS servers to the Android container"},
+                      container_network_dns_servers_));
 
   action([&](const cli::Command::Context&) {
     try {
@@ -93,6 +102,12 @@ anbox::cmds::ContainerManager::ContainerManager()
       container::Service::Configuration config;
       config.privileged = privileged_;
       config.rootfs_overlay = enable_rootfs_overlay_;
+      config.container_network_address = container_network_address_;
+      config.container_network_gateway = container_network_gateway_;
+
+      if (container_network_dns_servers_.length() > 0)
+        config.container_network_dns_servers = utils::string_split(container_network_dns_servers_, ',');
+
       auto service = container::Service::create(rt, config);
 
       rt->start();
@@ -240,7 +255,7 @@ bool anbox::cmds::ContainerManager::setup_rootfs_overlay() {
     fs::create_directories(overlay_path);
 
   const auto rootfs_path = SystemConfiguration::instance().rootfs_dir();
-  const auto overlay_config = utils::string_format("lowerdir=%s:%s", rootfs_path, overlay_path);
+  const auto overlay_config = utils::string_format("lowerdir=%s:%s", overlay_path, rootfs_path);
   auto m = common::MountEntry::create("overlay", combined_rootfs_path, "overlay", MS_RDONLY, overlay_config.c_str());
   if (!m) {
     ERROR("Failed to setup rootfs overlay");

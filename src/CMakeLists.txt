@@ -1,10 +1,6 @@
 include_directories(
   ${Boost_INCLUDE_DIRS}
-  ${GLIB_INCLUDE_DIRS}
-  ${GIO_INCLUDE_DIRS}
-  ${GIO-UNIX_INCLUDE_DIRS}
   ${MIRCLIENT_INCLUDE_DIRS}
-  ${DBUS_CPP_INCLUDE_DIRS}
   ${DBUS_INCLUDE_DIRS}
   ${SDL2_INCLUDE_DIRS}
   ${SDL2_IMAGE_INCLUDE_DIRS}
@@ -101,6 +97,8 @@ set(SOURCES
     anbox/cmds/version.h
     anbox/cmds/wait_ready.cpp
     anbox/cmds/wait_ready.h
+    anbox/cmds/check_features.cpp
+    anbox/cmds/check_features.h
 
     anbox/common/binary_writer.cpp
     anbox/common/binary_writer.h
@@ -349,8 +347,6 @@ add_library(anbox-core STATIC ${SOURCES})
 target_link_libraries(anbox-core
   ${Boost_LDFLAGS}
   ${Boost_LIBRARIES}
-  ${DBUS_CPP_LDFLAGS}
-  ${DBUS_CPP_LIBRARIES}
   ${SDL2_LDFLAGS}
   ${SDL2_LIBRARIES}
   ${SDL2_IMAGE_LDFLAGS}

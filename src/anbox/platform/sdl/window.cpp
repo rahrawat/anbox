@@ -72,8 +72,9 @@ Window::Window(const std::shared_ptr<Renderer> &renderer,
     BOOST_THROW_EXCEPTION(std::runtime_error(message));
   }
 
-  if (SDL_SetWindowHitTest(window_, &Window::on_window_hit, this) < 0)
-    BOOST_THROW_EXCEPTION(std::runtime_error("Failed to register for window hit test"));
+  if (utils::get_env_value("ANBOX_NO_SDL_WINDOW_HIT_TEST", "false") == "false")
+    if (SDL_SetWindowHitTest(window_, &Window::on_window_hit, this) < 0)
+      BOOST_THROW_EXCEPTION(std::runtime_error("Failed to register for window hit test"));
 
   SDL_SysWMinfo info;
   SDL_VERSION(&info.version);
@@ -83,6 +84,12 @@ Window::Window(const std::shared_ptr<Renderer> &renderer,
       native_display_ = static_cast<EGLNativeDisplayType>(info.info.x11.display);
       native_window_ = static_cast<EGLNativeWindowType>(info.info.x11.window);
       break;
+#if defined(WAYLAND_SUPPORT)
+    case SDL_SYSWM_WAYLAND:
+      native_display_ = static_cast<EGLNativeDisplayType>(info.info.wl.display);
+      native_window_ = reinterpret_cast<EGLNativeWindowType>(info.info.wl.surface);
+      break;
+#endif
 #if defined(MIR_SUPPORT)
     case SDL_SYSWM_MIR: {
       native_display_ = static_cast<EGLNativeDisplayType>(mir_connection_get_egl_native_display(info.info.mir.connection));
